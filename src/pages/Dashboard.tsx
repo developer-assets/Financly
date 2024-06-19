@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth, db } from '../config/firebase';
 import { addDoc, collection, getDocs, query } from 'firebase/firestore';
@@ -13,9 +12,9 @@ import NoTransactions from '../components/NoTransactions';
 import { Card, Row } from 'antd';
 import { Line, Pie } from '@ant-design/charts';
 import TransactionSearch from '../components/TransactionSearch';
+import Loader from '../components/Loader';
 
 const Dashboard: React.FC = () => {
-	const navigate = useNavigate();
 	const [user] = useAuthState(auth);
 	const [isExpenseModalVisible, setIsExpenseModalVisible] = useState(false);
 	const [isIncomeModalVisible, setIsIncomeModalVisible] = useState(false);
@@ -24,7 +23,6 @@ const Dashboard: React.FC = () => {
 	const [currentBalance, setCurrentBalance] = useState(0);
 	const [income, setIncome] = useState(0);
 	const [expenses, setExpenses] = useState(0);
-	const [finish, setFinish] = useState('');
 
 	// const sampleTransactions = [
 	// {
@@ -203,7 +201,7 @@ const Dashboard: React.FC = () => {
 		<>
 			<Header />
 			{loading ? (
-				<p>Loading...</p>
+				<Loader />
 			) : (
 				<>
 					<Cards

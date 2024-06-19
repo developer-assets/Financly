@@ -1,16 +1,16 @@
 export interface GoogleAuthUser {
 	uid: string;
-	displayName: string;
-	photoURL: string;
-	email: string;
+	displayName: string | null;
+	photoURL: string | null;
+	email: string | null;
 	[key: string]: any;
 }
 
 export interface RequiredUserData {
 	uid: string;
-	displayName: string;
-	photoURL: string;
-	email: string;
+	displayName: string | null;
+	photoURL: string | null;
+	email: string | null;
 }
 
 export interface Transaction {

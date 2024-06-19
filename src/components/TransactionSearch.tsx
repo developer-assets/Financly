@@ -1,11 +1,16 @@
-import React, { useRef, useState } from 'react';
-import { Input, Table, Select, Radio } from 'antd';
-import { SearchOutlined } from '@ant-design/icons';
-import { useNavigate } from 'react-router-dom';
-const { Search } = Input;
-const { Option } = Select;
+import React, { useState } from 'react';
+import { Table, Select, Radio } from 'antd';
+import { parse } from 'papaparse';
+import { Transaction } from '../typescript/interface';
 
-const TransactionSearch = ({
+const { Option } = Select;
+interface TransactionSearchProps {
+	transactions: Transaction[];
+	fetchTransactions: () => Promise<void>;
+	addTransaction: (transaction: Transaction) => Promise<void>;
+}
+
+const TransactionSearch: React.FC<TransactionSearchProps> = ({
 	transactions,
 	addTransaction,
 	fetchTransactions,
@@ -14,33 +19,31 @@ const TransactionSearch = ({
 	const [selectedTag, setSelectedTag] = useState('');
 	const [typeFilter, setTypeFilter] = useState('');
 	const [sortKey, setSortKey] = useState('');
-	const fileInput = useRef();
 
-	function importFromCsv(event) {
+	const importFromCsv = (event: React.ChangeEvent<HTMLInputElement>) => {
 		event.preventDefault();
 		try {
-			console.log('Parsing');
-			// parse(event.target.files[0], {
-			// 	header: true,
-			// 	complete: async function (results) {
-			// 		// Now results.data is an array of objects representing your CSV rows
-			// 		for (const transaction of results.data) {
-			// 			// Write each transaction to Firebase, you can use the addTransaction function here
-			// 			console.log('Transactions', transaction);
-			// 			const newTransaction = {
-			// 				...transaction,
-			// 				amount: parseInt(transaction.amount),
-			// 			};
-			// 			await addTransaction(newTransaction, true);
-			// 		}
-			// 	},
-			console.log('All Transactions Added');
-			fetchTransactions();
-			event.target.files = null;
+			if (event.target.files && event.target.files[0]) {
+				parse(event.target.files[0], {
+					header: true,
+					complete: async function (results) {
+						for (const transaction of results.data) {
+							const newTransaction: Transaction = {
+								...transaction,
+								amount: parseInt(transaction.amount, 10),
+							};
+							await addTransaction(newTransaction);
+						}
+						console.log('All Transactions Added');
+						fetchTransactions();
+					},
+				});
+			}
+			event.target.value = ''; // Clear the file input after processing
 		} catch (err) {
 			console.log(err);
 		}
-	}
+	};
 
 	const columns = [
 		{
@@ -80,15 +83,17 @@ const TransactionSearch = ({
 		return searchMatch && tagMatch && typeMatch;
 	});
 
-	const sortedTransactions = [...filteredTransactions].sort((a, b) => {
-		if (sortKey === 'date') {
-			return new Date(a.date) - new Date(b.date);
-		} else if (sortKey === 'amount') {
-			return a.amount - b.amount;
-		} else {
-			return 0;
+	const sortedTransactions = [...filteredTransactions].sort(
+		(a: Transaction, b: Transaction) => {
+			if (sortKey === 'date') {
+				return new Date(a.date).getTime() - new Date(b.date).getTime();
+			} else if (sortKey === 'amount') {
+				return Number(a.amount) - Number(b.amount);
+			} else {
+				return 0;
+			}
 		}
-	});
+	);
 
 	const dataSource = sortedTransactions.map((transaction, index) => ({
 		key: index,
@@ -96,11 +101,7 @@ const TransactionSearch = ({
 	}));
 
 	return (
-		<div
-			style={{
-				width: '100%',
-				padding: '0rem 2rem',
-			}}>
+		<div style={{ width: '100%', padding: '0rem 2rem' }}>
 			<div
 				style={{
 					display: 'flex',
@@ -113,6 +114,7 @@ const TransactionSearch = ({
 					<img
 						src='/search.svg'
 						width='16'
+						alt='Search'
 					/>
 					<input
 						placeholder='Search by Name'
@@ -125,22 +127,21 @@ const TransactionSearch = ({
 					value={typeFilter}
 					placeholder='Filter'
 					allowClear>
-					<Option value=''>All</Option>
+					<Option value=''>All transactions</Option>
 					<Option value='income'>Income</Option>
 					<Option value='expense'>Expense</Option>
 				</Select>
 			</div>
 
-			{/* <Select
-        style={{ width: 200, marginRight: 10 }}
-        onChange={(value) => setSelectedTag(value)}
-        placeholder="Filter by tag"
-        allowClear
-      >
-        <Option value="food">Food</Option>
-        <Option value="education">Education</Option>
-        <Option value="office">Office</Option>
-      </Select> */}
+			<Select
+				style={{ width: 200, marginRight: 10 }}
+				onChange={(value) => setSelectedTag(value)}
+				placeholder='Filter by tag'
+				allowClear>
+				<Option value='food'>Food</Option>
+				<Option value='education'>Education</Option>
+				<Option value='office'>Office</Option>
+			</Select>
 			<div className='my-table'>
 				<div
 					style={{
@@ -167,12 +168,6 @@ const TransactionSearch = ({
 							gap: '1rem',
 							width: '400px',
 						}}>
-						<button
-							className='btn'
-							// onClick={exportToCsv}
-						>
-							Export to CSV
-						</button>
 						<label
 							htmlFor='file-csv'
 							className='btn btn-blue'>

@@ -71,7 +71,9 @@ const Auth: React.FC = () => {
 				userInputData.password
 			);
 			const user = response.user;
-			await createUserDocument(user);
+			if (user && typeof user.displayName === 'string') {
+				await createUserDocument(user);
+			}
 			console.log(user);
 			navigate('/dashboard');
 		} catch (err) {
